@@ -14,13 +14,15 @@ const indexColumnMap = {
   6: [6, 13, 20, 27, 34, 41],
 };
 
+const PLAYER_1 = "Player_1";
+const PLAYER_2 = "Player_2";
 
 export default function Home() {
   const [gridState, setGridState] = useState([]);
+  const [player, setPlayer] = useState(PLAYER_1);
   const [animationInProgress, setAnimationInProgress] = useState(false);
- 
 
- // todo: rework this 
+  // todo: rework this
   const findCellPlacement = (initialPos: Number) => {
     const moveBy = 7;
     let previous = initialPos;
@@ -28,12 +30,12 @@ export default function Home() {
 
     let notFound = true;
 
-    if (gridState.includes(initialPos)) return;
+    if (gridState.filter((g) => g.cell == initialPos).length > 0) return;
 
     let newPos = initialPos;
 
     while (notFound) {
-      if (gridState.includes(newPos + moveBy)) {
+      if (gridState.find((item) => item.cell == newPos + moveBy)) {
         pos = newPos;
         notFound = false;
       } else {
@@ -91,7 +93,7 @@ export default function Home() {
         // add element to end of state array to start animation
         if (iteration == 0) {
           flushSync(() => {
-            setGridState((g) => [...g, element]);
+            setGridState((g) => [...g, { cell: element, user: player }]);
             resolve();
           });
         } else {
@@ -100,8 +102,8 @@ export default function Home() {
             // this simulates "dropping" the chip in the gameboard.
             setGridState((g) => {
               const lastElement = g[g.length - 1];
-              const filtered = g.filter((e) => e !== lastElement);
-              return [...filtered, element];
+              const filtered = g.filter((e) => e.cell !== lastElement.cell);
+              return [...filtered, { cell: element, user: player }];
             });
             resolve();
           });
@@ -119,7 +121,7 @@ export default function Home() {
     let iteration = 0;
     const associatedColumnIndexes = indexColumnMap[i];
     const unusedColumnIndexes = associatedColumnIndexes.filter(
-      (d) => !gridState.includes(d)
+      (d) => !gridState.some((g) => g.cell == d)
     );
 
     for (i of unusedColumnIndexes) {
@@ -127,18 +129,21 @@ export default function Home() {
       iteration++;
     }
 
-    setGridState([...previousState, finalPosition]);
+    setGridState([...previousState, { cell: finalPosition, user: player }]);
     setAnimationInProgress(false);
-    
+    player == PLAYER_1 ? setPlayer(PLAYER_2) : setPlayer(PLAYER_1)
   };
+
   return (
     <Layout>
       <div className="score-left"></div>
       <div className="grid">
         {Array.from(new Array(42)).map((_, i) => {
+          const gridData = gridState.find(data => data.cell == i)
+          console.log(gridData)
           return (
             <div
-              className={`cell ${i} ${gridState.includes(i) ? "fill" : ""}`}
+              className={`cell ${i}  ${gridData ? `${gridData.user}` : 'empty'}`}
               onClick={
                 animationInProgress
                   ? () => {
