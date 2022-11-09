@@ -2,6 +2,7 @@ import Layout from "../components/Layouts";
 
 import { useState, useEffect } from "react";
 import { flushSync } from "react-dom";
+import Modal from "../components/Winner";
 
 const lastRows = [35, 36, 37, 38, 39, 40, 41];
 const indexColumnMap = {
@@ -17,10 +18,89 @@ const indexColumnMap = {
 const PLAYER_1 = "Player_1";
 const PLAYER_2 = "Player_2";
 
+const checkColumnRecursively = (element, array, moveBy, counter = 0) => {
+  array.shift();
+  const nextElement = element + moveBy;
+
+  // counter is 4, we've had four consecutive hits.
+  if (counter == 4) {
+    return true;
+  }
+
+  console.log("counter", counter)
+
+  if (array.length > 0) {
+    if (array.includes(nextElement)) {
+      counter = counter + 1;
+      return checkColumnRecursively(nextElement, array, moveBy, counter);
+    } else {
+      return false;
+    }
+  } else {
+    return true;
+  }
+};
+
+const checkFourInARow = (state, currentPlayer, moveBy) => {
+  let won = false;
+  const filteredSate = state.filter((s) => s.user === currentPlayer);
+
+  if (filteredSate.length < 4) {
+    return false;
+  }
+
+  const justPositions = filteredSate
+    .map(({ cell }) => cell)
+    .sort((a, b) => a - b);
+
+  if (justPositions.length < 4) {
+    return false;
+  }
+
+  console.log(justPositions);
+
+  // elements are sorted
+  // check one element, see if there is on 7 spaces away
+  // if 7 spaces away, then grab that element and check to see if there is another one 7 spaces away(recursion)
+  // if not 7 spaces, keep going
+
+  justPositions.forEach((element) => {
+    const winConditionMet = checkColumnRecursively(
+      element,
+      [...justPositions],
+      moveBy
+    );
+    if (winConditionMet) {
+      console.log("win condition met!");
+      won = true;
+      return;
+    }
+  });
+
+  return won;
+};
+
+const checkWinConditions = (state, currentPlayer, callback) => {
+  const checkVerticalWin = checkFourInARow(state, currentPlayer, 7);
+
+  if (checkVerticalWin) {
+    callback({ player: currentPlayer, won: true });
+    return;
+  }
+
+  const checkHorizontalWin = checkFourInARow(state, currentPlayer, 1);
+
+  if (checkHorizontalWin) {
+    callback({ player: currentPlayer, won: true });
+    return;
+  }
+};
+
 export default function Home() {
   const [gridState, setGridState] = useState([]);
   const [player, setPlayer] = useState(PLAYER_1);
   const [animationInProgress, setAnimationInProgress] = useState(false);
+  const [winner, setWinner] = useState({ player: null, won: false });
 
   // todo: rework this
   const findCellPlacement = (initialPos: Number) => {
@@ -129,21 +209,30 @@ export default function Home() {
       iteration++;
     }
 
-    setGridState([...previousState, { cell: finalPosition, user: player }]);
+    const newGridState = [
+      ...previousState,
+      { cell: finalPosition, user: player },
+    ];
+    setGridState(newGridState);
     setAnimationInProgress(false);
-    player == PLAYER_1 ? setPlayer(PLAYER_2) : setPlayer(PLAYER_1)
+
+    player == PLAYER_1 ? setPlayer(PLAYER_2) : setPlayer(PLAYER_1);
+
+    checkWinConditions(newGridState, player, setWinner);
   };
 
   return (
     <Layout>
+      {winner.won && <Modal player={player} />}
       <div className="score-left"></div>
       <div className="grid">
         {Array.from(new Array(42)).map((_, i) => {
-          const gridData = gridState.find(data => data.cell == i)
-          console.log(gridData)
+          const gridData = gridState.find((data) => data.cell == i);
           return (
             <div
-              className={`cell ${i}  ${gridData ? `${gridData.user}` : 'empty'}`}
+              className={`cell ${i}  ${
+                gridData ? `${gridData.user}` : "empty"
+              }`}
               onClick={
                 animationInProgress
                   ? () => {
