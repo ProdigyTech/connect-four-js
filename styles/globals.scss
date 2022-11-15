@@ -41,7 +41,7 @@ a {
 
 .outter-grid {
     display: grid;
-    grid-template-columns: repeat(3, 50vw);
+    grid-template-columns: repeat(1, 50vw);
     grid-template-rows: repeat(1, 100vh);
      width: 90vw;
     height: 90vh;
@@ -79,7 +79,6 @@ a {
   left: 0;
   z-index: 999;
   opacity: 1;
-  pointer-events: none;
   transition: all 0.3s;
   color: black;
   &:target {
