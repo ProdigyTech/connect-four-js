@@ -3,6 +3,12 @@ import Layout from "../components/Layouts";
 import { useCallback, useState } from "react";
 import { flushSync } from "react-dom";
 import Modal from "../components/Winner";
+import {
+  GridState,
+  GridState as GridStateObject,
+  State,
+  Winner,
+} from "../util/types";
 
 const lastRows = [35, 36, 37, 38, 39, 40, 41];
 const indexColumnMap = {
@@ -18,7 +24,12 @@ const indexColumnMap = {
 const PLAYER_1 = "Player_1";
 const PLAYER_2 = "Player_2";
 
-const checkColumnRecursively = (element, array, moveBy, counter = 1) => {
+const checkColumnRecursively: Boolean = (
+  element: Number,
+  array: [],
+  moveBy: Number,
+  counter: Number = 1
+) => {
   const nextElement = element + moveBy;
   // counter is 4, we've had four consecutive hits.
   if (counter == 4) {
@@ -40,15 +51,21 @@ const checkColumnRecursively = (element, array, moveBy, counter = 1) => {
   }
 };
 
-const checkFourInARow = (state, currentPlayer, moveBy) => {
+const checkFourInARow = (
+  state: State,
+  currentPlayer: String,
+  moveBy: Number
+) => {
   let won = false;
-  const currentUserGameState = state.filter((s) => s.user === currentPlayer);
+  const currentUserGameState: State = state.filter(
+    (s: GridStateObject) => s.user === currentPlayer
+  );
 
   if (currentUserGameState.length < 4) {
     return false;
   }
 
-  const currentUserBoardPositions = currentUserGameState
+  const currentUserBoardPositions: Array<Number> = currentUserGameState
     .map(({ cell }) => cell)
     .sort((a, b) => a - b);
 
@@ -57,9 +74,9 @@ const checkFourInARow = (state, currentPlayer, moveBy) => {
   }
 
   // elements are sorted
-  // check one element, see if there is on 7 spaces away
-  // if 7 spaces away, then grab that element and check to see if there is another one 7 spaces away(recursion)
-  // if not 7 spaces, keep going
+  // check one element, see if there is one x spaces away
+  // if x spaces away, then grab that element and check to see if there is another one x spaces away(recursion)
+  // if not x spaces, keep going
 
   currentUserBoardPositions.forEach((element) => {
     const winConditionMet = checkColumnRecursively(
@@ -76,21 +93,31 @@ const checkFourInARow = (state, currentPlayer, moveBy) => {
   return won;
 };
 
-const checkWinConditions = (state, currentPlayer, callback) => {
-  const checkVerticalWin = checkFourInARow(state, currentPlayer, 7);
-
-  if (checkVerticalWin) {
+const checkWinConditions = (
+  state: State,
+  currentPlayer: String,
+  callback: React.Dispatch<React.SetStateAction<Winner>>
+) => {
+  // vertical check
+  if (checkFourInARow(state, currentPlayer, 7)) {
     callback({ player: currentPlayer, won: true });
     return true;
   }
 
-  const checkHorizontalWin = checkFourInARow(state, currentPlayer, 1);
-
-  if (checkHorizontalWin) {
+  // horizontal check
+  if (checkFourInARow(state, currentPlayer, 1)) {
     callback({ player: currentPlayer, won: true });
     return true;
   }
 
+  // diag left & right
+  if (
+    checkFourInARow(state, currentPlayer, 6) ||
+    checkFourInARow(state, currentPlayer, 8)
+  ) {
+    callback({ player: currentPlayer, won: true });
+    return true;
+  }
   return false;
 };
 
@@ -109,23 +136,27 @@ export default function Home() {
 
   // todo: rework this
   const findCellPlacement = useCallback(
-    (initialPos: Number) => {
+    (initialPos: number) => {
       const moveBy = 7;
-      let previous = initialPos;
+
       let pos = null;
 
       let notFound = true;
 
-      if (gridState.filter((g) => g.cell == initialPos).length > 0) return;
+      if (gridState.filter((g: GridState) => g.cell == initialPos).length > 0)
+        return;
 
       let newPos = initialPos;
 
       while (notFound) {
-        if (gridState.find((item) => item.cell == newPos + moveBy)) {
+        if (
+          gridState.find(
+            (item: GridStateObject) => item.cell == newPos + moveBy
+          )
+        ) {
           pos = newPos;
           notFound = false;
         } else {
-          previous = newPos;
           newPos = newPos + moveBy;
         }
 
@@ -175,7 +206,7 @@ export default function Home() {
   );
 
   const animationPromise = useCallback(
-    (iteration, element) => {
+    (iteration: Number, element: Number) => {
       return new Promise((resolve, _) => {
         setTimeout(() => {
           // add element to end of state array to start animation
@@ -199,47 +230,50 @@ export default function Home() {
         }, 60);
       });
     },
-    [gridState, player]
+    [player]
   );
 
-  const onClickCell = async (e: React.MouseEvent<HTMLElement>, i: Number) => {
-    flushSync(() => {
-      setAnimationInProgress(true);
-    });
-    const finalPosition = findCellPlacement(i);
+  const onClickCell = useCallback(
+    async (e: React.MouseEvent<HTMLElement>, i: number) => {
+      flushSync(() => {
+        setAnimationInProgress(true);
+      });
 
-    if (finalPosition === undefined) {
+      const finalPosition = findCellPlacement(i);
+
+      if (finalPosition === undefined) {
+        setAnimationInProgress(false);
+        return;
+      }
+
+      const previousState = gridState;
+      let iteration = 0;
+      const associatedColumnIndexes = indexColumnMap[i];
+      const unusedColumnIndexes = associatedColumnIndexes.filter(
+        (d: Number) => !gridState.some((g: GridStateObject) => g.cell == d)
+      );
+
+      for (i of unusedColumnIndexes) {
+        await animationPromise(iteration, i);
+        iteration++;
+      }
+
+      const newGridState = [
+        ...previousState,
+        { cell: finalPosition, user: player },
+      ];
+
+      setGridState(newGridState);
       setAnimationInProgress(false);
-      return;
-    }
 
-    const previousState = gridState;
-    let iteration = 0;
-    const associatedColumnIndexes = indexColumnMap[i];
-    const unusedColumnIndexes = associatedColumnIndexes.filter(
-      (d) => !gridState.some((g) => g.cell == d)
-    );
+      const didWin = checkWinConditions(newGridState, player, setWinner);
 
-  
-    for (i of unusedColumnIndexes) {
-      await animationPromise(iteration, i);
-      iteration++;
-    }
-
-    const newGridState = [
-      ...previousState,
-      { cell: finalPosition, user: player },
-    ];
-
-    setGridState(newGridState);
-    setAnimationInProgress(false);
-
-    const didWin = checkWinConditions(newGridState, player, setWinner);
-
-    if (!didWin) {
-      player == PLAYER_1 ? setPlayer(PLAYER_2) : setPlayer(PLAYER_1);
-    }
-  };
+      if (!didWin) {
+        player == PLAYER_1 ? setPlayer(PLAYER_2) : setPlayer(PLAYER_1);
+      }
+    },
+    [gridState, player, findCellPlacement, animationPromise]
+  );
 
   return (
     <>
@@ -254,7 +288,9 @@ export default function Home() {
 
         <div className="grid">
           {Array.from(new Array(42)).map((_, i) => {
-            const gridData = gridState.find((data) => data.cell == i);
+            const gridData = gridState.find(
+              (data: GridStateObject) => data.cell == i
+            );
             return (
               <div
                 className={`cell ${i}  ${
