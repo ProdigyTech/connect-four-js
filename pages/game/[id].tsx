@@ -1,5 +1,5 @@
 import Layout from "../../components/Layouts";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { flushSync } from "react-dom";
 import Modal from "../../components/Winner";
 import { GridState, GridState as GridStateObject } from "../util/types/types";
@@ -13,10 +13,24 @@ import {
 } from "../../util";
 
 export default function Home() {
+  const [mousePlacement, setMousePlacement] = useState(null);
   const [gridState, setGridState] = useState([]);
   const [player, setPlayer] = useState(PLAYER_1);
   const [animationInProgress, setAnimationInProgress] = useState(false);
   const [winner, setWinner] = useState({ player: null, won: false });
+
+
+
+  const mouseTracker = ({ clientY, clientX }) => {
+    // console.log(clientY, clientX);
+    setMousePlacement({ clientX, clientY });
+  };
+
+  useEffect(() => {
+    if (window) {
+      window.addEventListener("mousemove", mouseTracker);
+    }
+  }, []);
 
   const resetGame = useCallback(() => {
     setGridState([]);
@@ -24,7 +38,6 @@ export default function Home() {
     setAnimationInProgress(false);
     setWinner({ player: null, won: false });
   }, []);
-
 
   const findCellPlacement = useCallback(
     (initialPos: number) => {
@@ -49,7 +62,7 @@ export default function Home() {
           newPos = newPos + moveBy;
         }
 
-        // if we get to the end and the new position is at the bottom of the grid, set that position. 
+        // if we get to the end and the new position is at the bottom of the grid, set that position.
         if (lastRows.includes(newPos)) {
           pos = newPos;
           notFound = false;
@@ -90,7 +103,7 @@ export default function Home() {
     [player]
   );
 
-  // TODO: clean this up. 
+  // TODO: clean this up.
   const onClickCell = useCallback(
     async (_: React.MouseEvent<HTMLElement>, i: number) => {
       flushSync(() => {
