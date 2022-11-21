@@ -2,13 +2,15 @@ import Layout from "../components/Layouts";
 import { useCallback, useState } from "react";
 import { flushSync } from "react-dom";
 import Modal from "../components/Winner";
+import { GridState, GridState as GridStateObject } from "../util/types/types";
+
 import {
-  GridState,
-  GridState as GridStateObject,
-} from "../util/types/types";
-
-import { lastRows, indexColumnMap, PLAYER_1, PLAYER_2, checkWinConditions } from "../util";
-
+  lastRows,
+  indexColumnMap,
+  PLAYER_1,
+  PLAYER_2,
+  checkWinConditions,
+} from "../util";
 
 export default function Home() {
   const [gridState, setGridState] = useState([]);
@@ -23,13 +25,11 @@ export default function Home() {
     setWinner({ player: null, won: false });
   }, []);
 
-  // todo: rework this
+
   const findCellPlacement = useCallback(
     (initialPos: number) => {
       const moveBy = 7;
-
       let pos = null;
-
       let notFound = true;
 
       if (gridState.filter((g: GridState) => g.cell == initialPos).length > 0)
@@ -49,43 +49,11 @@ export default function Home() {
           newPos = newPos + moveBy;
         }
 
+        // if we get to the end and the new position is at the bottom of the grid, set that position. 
         if (lastRows.includes(newPos)) {
-          switch (newPos) {
-            case 35:
-              pos = 35;
-              notFound = false;
-              break;
-
-            case 36:
-              pos = 36;
-              notFound = false;
-              break;
-
-            case 37:
-              pos = 37;
-              notFound = false;
-              break;
-
-            case 38:
-              pos = 38;
-              notFound = false;
-              break;
-
-            case 39:
-              pos = 39;
-              notFound = false;
-              break;
-
-            case 40:
-              pos = 40;
-              notFound = false;
-              break;
-
-            case 41:
-              pos = 41;
-              notFound = false;
-              break;
-          }
+          pos = newPos;
+          notFound = false;
+          break;
         }
       }
 
@@ -122,8 +90,9 @@ export default function Home() {
     [player]
   );
 
+  // TODO: clean this up. 
   const onClickCell = useCallback(
-    async (e: React.MouseEvent<HTMLElement>, i: number) => {
+    async (_: React.MouseEvent<HTMLElement>, i: number) => {
       flushSync(() => {
         setAnimationInProgress(true);
       });
