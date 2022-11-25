@@ -1,8 +1,10 @@
 import Layout from "../../components/Layouts";
 import { useCallback, useState, useEffect } from "react";
 import { flushSync } from "react-dom";
-import Modal from "../../components/Winner";
+import Modal, { NoticeModal } from "../../components/Winner";
 import { GridState, GridState as GridStateObject } from "../util/types/types";
+import { useSocketIO } from "../../hooks/useSocketIO";
+import socketUtils from "../../util/communication/socketUtils";
 
 import {
   lastRows,
@@ -19,10 +21,14 @@ export default function Home() {
   const [animationInProgress, setAnimationInProgress] = useState(false);
   const [winner, setWinner] = useState({ player: null, won: false });
 
+  const { isLoading, socketInstance } = useSocketIO({
+    socketCallbacks: socketUtils,
+    endPoint: "/api/socket",
+  });
+
 
 
   const mouseTracker = ({ clientY, clientX }) => {
-    // console.log(clientY, clientX);
     setMousePlacement({ clientX, clientY });
   };
 
@@ -155,6 +161,7 @@ export default function Home() {
         </b>{" "}
       </h3>
       <Layout>
+        {isLoading && <NoticeModal message={`connecting to game server`} header={`Please wait...`}/>}
         {winner.won && <Modal player={player} onClick={resetGame} />}
 
         <div className="grid">
