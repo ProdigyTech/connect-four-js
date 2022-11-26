@@ -1,5 +1,7 @@
 import { Server } from "Socket.IO";
 
+const userGameTracker = [];
+
 const ioHandler = (req, res) => {
   if (!res.socket.server.io) {
     console.log("*First use, starting socket.io");
@@ -9,6 +11,8 @@ const ioHandler = (req, res) => {
     io.on("connection", (socket) => {
       socket.on("join", async function (room) {
         const sockets = await io.in(room).fetchSockets();
+
+        userGameTracker.push({ socketID: socket.id, roomID: room });
 
         if (sockets.length == 2) {
           console.error("can't join the room, 2 people in there");
@@ -36,8 +40,26 @@ const ioHandler = (req, res) => {
         console.log("mouse-move called!", msg);
         socket.broadcast.emit("mouse-placement", msg);
       });
+      socket.on("change-player", (data) => {
+        socket.broadcast.emit("change-player", data);
+      });
       socket.on("animation-send", (data) => {
         socket.broadcast.emit("animation-send", data);
+      });
+
+      socket.on("disconnect", (_id) => {
+        console.log("socket disconnected", _id, socket.id);
+
+        const room = userGameTracker.find((s) => s.socketID == socket.id);
+        if (room) {
+          console.log(room)
+          io.to(room.roomID).emit("client-disconnect");
+        } else {
+          console.warn(
+            "A client disconnected but we couldn't find an associated room ",
+            socket.id
+          );
+        }
       });
     });
 

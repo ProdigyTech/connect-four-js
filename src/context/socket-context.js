@@ -22,8 +22,8 @@ export function AppWrapper({ children }) {
   const [player, setPlayer] = useState(null);
   const [gridState, setGridState] = useState([]);
   const [winner, setWinner] = useState({ player: null, won: false });
-  const [currentPlayer, setCurrentPlayer] = useState(null)
-  const [turnInProgress, setTurnInProgress] = useState(false)
+  const [currentPlayer, setCurrentPlayer] = useState(null);
+  const [turnInProgress, setTurnInProgress] = useState(false);
 
   const socketInitializer = useCallback(async () => {
     await fetch(endPoint);
@@ -40,6 +40,13 @@ export function AppWrapper({ children }) {
     setJoinedRoom(true);
   };
 
+  const changePlayer = () => {
+    const nextPlayer = currentPlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
+    console.log("nextPlayer", nextPlayer);
+    socketInstance?.emit("change-player", nextPlayer);
+    setCurrentPlayer(nextPlayer);
+  };
+
   useEffect(() => {
     if (!isLoading && socketInstance) {
       socketInstance.on("connect", (data) => {
@@ -51,12 +58,17 @@ export function AppWrapper({ children }) {
         console.log("mouse placement", msg);
       });
 
-      socketInstance.on("disconnect", () => {
-        console.log("disconnect");
+      socketInstance.on("client-disconnect", (data) => {
+        console.log("disconnected", data)
+        setIsWaitingForOtherPlayer(true)
       });
 
       socketInstance.on("animation", (data) => {
         setGridState(data);
+      });
+
+      socketInstance.on("change-player", (data) => {
+        setCurrentPlayer(data);
       });
 
       socketInstance.on("win", (data) => {
@@ -66,11 +78,11 @@ export function AppWrapper({ children }) {
       socketInstance.on("player-joined", (data) => {
         if (data.length > 1) {
           setIsWaitingForOtherPlayer(false);
-            
+          socketInstance.emit("change-player", PLAYER_1);
+
           const player1or2 = data.indexOf(socketInstance.id);
 
           player1or2 == 0 ? setPlayer(PLAYER_1) : setPlayer(PLAYER_2);
-          
         }
         setConnectedUser(data);
         console.log(data);
@@ -91,8 +103,10 @@ export function AppWrapper({ children }) {
     player,
     gridState,
     setGridState,
-    winner, 
-    setWinner
+    winner,
+    setWinner,
+    currentPlayer,
+    changePlayer,
   };
 
   return (

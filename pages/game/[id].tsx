@@ -29,6 +29,8 @@ export default function Home({ id }) {
     setGridState,
     winner,
     setWinner,
+    changePlayer,
+    currentPlayer
   } = useAppContext();
 
   useEffect(() => {
@@ -189,12 +191,15 @@ export default function Home({ id }) {
         setWinner(gameStatus);
         socketInstance.emit("win", gameStatus);
       } else {
+        changePlayer()
         // change player
         // unlock gameboard
       }
     },
     [gridState, player, findCellPlacement, animationPromise]
   );
+
+  console.log(currentPlayer, player)
 
   const myStyle = {
     left: `${mousePlacement?.clientX || 0}px`,
@@ -213,6 +218,12 @@ export default function Home({ id }) {
         Current Player:{" "}
         <b>
           {player ? (player === PLAYER_1 ? "Player 1" : "Player 2") : ""}
+          <br />
+          <br />
+          {currentPlayer &&
+            `${
+              currentPlayer === PLAYER_1 ? "Player 1" : "Player 2"
+            } is currently taking their turn`}
         </b>{" "}
       </h3>
       <Layout>
@@ -229,7 +240,7 @@ export default function Home({ id }) {
             header={`Please wait...`}
           />
         )}
-        {winner.won && <Modal player={player} onClick={resetGame} />}
+        {winner.won && <Modal player={winner.player} onClick={resetGame} />}
 
         <div className="grid">
           {Array.from(new Array(42)).map((_, i) => {
@@ -242,7 +253,7 @@ export default function Home({ id }) {
                   gridData ? `${gridData.user}` : "empty"
                 }`}
                 onClick={
-                  animationInProgress
+                  animationInProgress || currentPlayer !== player
                     ? () => {
                         console.log("onClick blocked, animation in progress");
                       }
