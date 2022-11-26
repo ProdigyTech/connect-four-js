@@ -15,11 +15,21 @@ import {
 
 export default function Home({ id }) {
   const [mousePlacement, setMousePlacement] = useState(null);
-  const [gridState, setGridState] = useState([]);
-  const [player, setPlayer] = useState(PLAYER_1);
   const [animationInProgress, setAnimationInProgress] = useState(false);
-  const [winner, setWinner] = useState({ player: null, won: false });
-  const { socketInstance, isLoading, joinedRoom, joinRoom } = useAppContext();
+
+  const {
+    socketInstance,
+    isLoading,
+    joinedRoom,
+    joinRoom,
+    connectedUsers,
+    isWaitingForOtherPlayer,
+    player,
+    gridState,
+    setGridState,
+    winner,
+    setWinner,
+  } = useAppContext();
 
   useEffect(() => {
     if (!joinedRoom && !isLoading) {
@@ -27,11 +37,7 @@ export default function Home({ id }) {
     }
   }, [joinRoom, joinedRoom, id, isLoading]);
 
-  useEffect(() => {
-    if (gridState.length) {
-      socketInstance?.emit("animation-send", gridState);
-    }
-  }, [gridState, socketInstance]);
+
 
   const mouseTracker = ({ clientY, clientX }) => {
     if (!isLoading && socketInstance) {
@@ -41,17 +47,17 @@ export default function Home({ id }) {
   };
 
   useEffect(() => {
-    socketInstance?.on("mouse-placement", ({ clientX, clientY }) => {
-      setMousePlacement({ clientX, clientY });
-    });
+    // socketInstance?.on("mouse-placement", ({ clientX, clientY }) => {
+    //   setMousePlacement({ clientX, clientY });
+    // });
 
     socketInstance?.on("animation-send", (data) => {
       setGridState(data);
     });
 
-    window.socketCall = function (on, message) {
-      socketInstance.emit(on, message);
-    };
+    // window.socketCall = function (on, message) {
+    //   socketInstance.emit(on, message);
+    // };
   }, [socketInstance]);
 
   useEffect(() => {
@@ -62,9 +68,9 @@ export default function Home({ id }) {
 
   const resetGame = useCallback(() => {
     setGridState([]);
-    setPlayer(PLAYER_1);
     setAnimationInProgress(false);
     setWinner({ player: null, won: false });
+    socketInstance.emit("animation", []);
   }, []);
 
   const findCellPlacement = useCallback(
@@ -111,6 +117,10 @@ export default function Home({ id }) {
           if (iteration == 0) {
             flushSync(() => {
               setGridState((g) => {
+                socketInstance.emit("animation", [
+                  ...g,
+                  { cell: element, user: player },
+                ]);
                 return [...g, { cell: element, user: player }];
               });
 
@@ -123,6 +133,10 @@ export default function Home({ id }) {
               setGridState((g) => {
                 const lastElement = g[g.length - 1];
                 const filtered = g.filter((e) => e.cell !== lastElement.cell);
+                socketInstance.emit("animation", [
+                  ...filtered,
+                  { cell: element, user: player },
+                ]);
                 return [...filtered, { cell: element, user: player }];
               });
               resolve();
@@ -167,11 +181,16 @@ export default function Home({ id }) {
 
       setGridState(newGridState);
       setAnimationInProgress(false);
+      socketInstance.emit("animation", newGridState);
 
-      const didWin = checkWinConditions(newGridState, player, setWinner);
+      const gameStatus = checkWinConditions(newGridState, player);
 
-      if (!didWin) {
-        player == PLAYER_1 ? setPlayer(PLAYER_2) : setPlayer(PLAYER_1);
+      if (gameStatus.won) {
+        setWinner(gameStatus);
+        socketInstance.emit("win", gameStatus);
+      } else {
+        // change player
+        // unlock gameboard
       }
     },
     [gridState, player, findCellPlacement, animationPromise]
@@ -191,8 +210,9 @@ export default function Home({ id }) {
     <>
       <h3>
         {" "}
-        Current Player: <b>
-          {player === PLAYER_1 ? "Player 1" : "Player 2"}
+        Current Player:{" "}
+        <b>
+          {player ? (player === PLAYER_1 ? "Player 1" : "Player 2") : ""}
         </b>{" "}
       </h3>
       <Layout>
@@ -200,6 +220,12 @@ export default function Home({ id }) {
         {isLoading && (
           <NoticeModal
             message={`connecting to game server`}
+            header={`Please wait...`}
+          />
+        )}
+        {!isLoading && isWaitingForOtherPlayer && (
+          <NoticeModal
+            message={`Waiting for opponent to join`}
             header={`Please wait...`}
           />
         )}

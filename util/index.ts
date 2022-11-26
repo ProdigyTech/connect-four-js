@@ -91,18 +91,17 @@ export const checkFourInARow = (
 export const checkWinConditions = (
   state: State,
   currentPlayer: String,
-  callback: React.Dispatch<React.SetStateAction<Winner>>
 ) => {
   // vertical check
   if (checkFourInARow(state, currentPlayer, 7)) {
-    callback({ player: currentPlayer, won: true });
-    return true;
+    return { player: currentPlayer, won: true }
+
   }
 
   // horizontal check
   if (checkFourInARow(state, currentPlayer, 1)) {
-    callback({ player: currentPlayer, won: true });
-    return true;
+    return { player: currentPlayer, won: true };
+
   }
 
   // diag left & right
@@ -110,8 +109,8 @@ export const checkWinConditions = (
     checkFourInARow(state, currentPlayer, 6) ||
     checkFourInARow(state, currentPlayer, 8)
   ) {
-    callback({ player: currentPlayer, won: true });
-    return true;
+    return { player: currentPlayer, won: true };
+
   }
-  return false;
+  return { player: null, won: false };
 };
