@@ -24,12 +24,26 @@ export function AppWrapper({ children }) {
   const [winner, setWinner] = useState({ player: null, won: false });
   const [currentPlayer, setCurrentPlayer] = useState(null);
   const [turnInProgress, setTurnInProgress] = useState(false);
+  const [isError, setIsError] = useState(null);
+
+  const handleErrors = (errors) => {
+    setIsError(errors);
+  };
 
   const socketInitializer = useCallback(async () => {
     await fetch(endPoint);
     setSocketInstance(io());
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (socketInstance) {
+      socketInstance.on("connect_error", (err) => handleErrors(err));
+      socketInstance.on("connect_failed", (err) => handleErrors(err));
+      socketInstance.on("disconnect", (err) => handleErrors(err));
+      socketInstance.on("err_connection_refused", (err) => handleErrors(err));
+    }
+  }, [socketInstance]);
 
   useEffect(() => {
     socketInitializer();
@@ -42,7 +56,6 @@ export function AppWrapper({ children }) {
 
   const changePlayer = () => {
     const nextPlayer = currentPlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
-    console.log("nextPlayer", nextPlayer);
     socketInstance?.emit("change-player", nextPlayer);
     setCurrentPlayer(nextPlayer);
   };
@@ -59,8 +72,8 @@ export function AppWrapper({ children }) {
       });
 
       socketInstance.on("client-disconnect", (data) => {
-        console.log("disconnected", data)
-        setIsWaitingForOtherPlayer(true)
+        console.log("disconnected", data);
+        setIsWaitingForOtherPlayer(true);
       });
 
       socketInstance.on("animation", (data) => {
@@ -107,6 +120,7 @@ export function AppWrapper({ children }) {
     setWinner,
     currentPlayer,
     changePlayer,
+    isError,
   };
 
   return (

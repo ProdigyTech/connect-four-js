@@ -30,8 +30,11 @@ export default function Home({ id }) {
     winner,
     setWinner,
     changePlayer,
-    currentPlayer
+    currentPlayer,
+    isError
   } = useAppContext();
+
+  console.log(isError, 'is error')
 
   useEffect(() => {
     if (!joinedRoom && !isLoading) {
@@ -228,13 +231,20 @@ export default function Home({ id }) {
       </h3>
       <Layout>
         <div style={myStyle}></div>
-        {isLoading && (
+        {isError && (
           <NoticeModal
-            message={`connecting to game server`}
-            header={`Please wait...`}
+            message={`There was an error connecting to the game server. \n Try again later`}
+            header={`Something went wrong`}
           />
         )}
-        {!isLoading && isWaitingForOtherPlayer && (
+        {isLoading &&
+          !isError && (
+            <NoticeModal
+              message={`connecting to game server`}
+              header={`Please wait...`}
+            />
+          )}
+        {!isLoading && isWaitingForOtherPlayer && !isError && (
           <NoticeModal
             message={`Waiting for opponent to join`}
             header={`Please wait...`}
