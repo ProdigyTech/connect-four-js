@@ -1,17 +1,20 @@
-import Layout from "../components/Layouts";
-import Input from "../components/Input";
-import Button from "../components/Button";
+import Layout from "../src/components/Layouts";
+import Input from "../src/components/Input";
+import Button from "../src/components/Button";
 import { useRouter } from "next/router";
 import { v4 as uuidv4 } from "uuid";
 import { useState } from "react";
+import { useAppContext } from "../src/context/socket-context";
 
 export default function Home() {
   const router = useRouter();
   const [inputState, setInputState] = useState("");
+   const { joinRoom } = useAppContext();
 
-  const goToRoom = (e: React.MouseEvent<HTMLElement>, id: String) => {
+  const goToRoom = async(e: React.MouseEvent<HTMLElement>, id: String) => {
     if (inputState.length || id.length) {
       e.preventDefault();
+      joinRoom(`${id || inputState}`)
       router.push(`/game/${id || inputState}`);
     }
   };

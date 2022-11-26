@@ -1,10 +1,9 @@
-import Layout from "../../components/Layouts";
+import Layout from "../../src/components/Layouts";
 import { useCallback, useState, useEffect } from "react";
 import { flushSync } from "react-dom";
-import Modal, { NoticeModal } from "../../components/Winner";
+import Modal, { NoticeModal } from "../../src/components/Winner";
 import { GridState, GridState as GridStateObject } from "../util/types/types";
-import { useSocketIO } from "../../hooks/useSocketIO";
-import socketUtils from "../../util/communication/socketUtils";
+import { useAppContext } from "../../src/context/socket-context";
 
 import {
   lastRows,
@@ -14,23 +13,46 @@ import {
   checkWinConditions,
 } from "../../util";
 
-export default function Home() {
+export default function Home({ id }) {
   const [mousePlacement, setMousePlacement] = useState(null);
   const [gridState, setGridState] = useState([]);
   const [player, setPlayer] = useState(PLAYER_1);
   const [animationInProgress, setAnimationInProgress] = useState(false);
   const [winner, setWinner] = useState({ player: null, won: false });
+  const { socketInstance, isLoading, joinedRoom, joinRoom } = useAppContext();
 
-  const { isLoading, socketInstance } = useSocketIO({
-    socketCallbacks: socketUtils,
-    endPoint: "/api/socket",
-  });
+  useEffect(() => {
+    if (!joinedRoom && !isLoading) {
+      joinRoom(id);
+    }
+  }, [joinRoom, joinedRoom, id, isLoading]);
 
-
+  useEffect(() => {
+    if (gridState.length) {
+      socketInstance?.emit("animation-send", gridState);
+    }
+  }, [gridState, socketInstance]);
 
   const mouseTracker = ({ clientY, clientX }) => {
-    setMousePlacement({ clientX, clientY });
+    if (!isLoading && socketInstance) {
+      // console.log("mouse-move", { clientX, clientY });
+      //   socketInstance.emit("mouse-move", { clientX, clientY });
+    }
   };
+
+  useEffect(() => {
+    socketInstance?.on("mouse-placement", ({ clientX, clientY }) => {
+      setMousePlacement({ clientX, clientY });
+    });
+
+    socketInstance?.on("animation-send", (data) => {
+      setGridState(data);
+    });
+
+    window.socketCall = function (on, message) {
+      socketInstance.emit(on, message);
+    };
+  }, [socketInstance]);
 
   useEffect(() => {
     if (window) {
@@ -88,7 +110,10 @@ export default function Home() {
           // add element to end of state array to start animation
           if (iteration == 0) {
             flushSync(() => {
-              setGridState((g) => [...g, { cell: element, user: player }]);
+              setGridState((g) => {
+                return [...g, { cell: element, user: player }];
+              });
+
               resolve();
             });
           } else {
@@ -152,6 +177,16 @@ export default function Home() {
     [gridState, player, findCellPlacement, animationPromise]
   );
 
+  const myStyle = {
+    left: `${mousePlacement?.clientX || 0}px`,
+    top: `${mousePlacement?.clientY || 0}px`,
+    "background-color": "black",
+    width: "25px",
+    height: "25px",
+    background: "black",
+    position: "absolute",
+  };
+
   return (
     <>
       <h3>
@@ -161,7 +196,13 @@ export default function Home() {
         </b>{" "}
       </h3>
       <Layout>
-        {isLoading && <NoticeModal message={`connecting to game server`} header={`Please wait...`}/>}
+        <div style={myStyle}></div>
+        {isLoading && (
+          <NoticeModal
+            message={`connecting to game server`}
+            header={`Please wait...`}
+          />
+        )}
         {winner.won && <Modal player={player} onClick={resetGame} />}
 
         <div className="grid">
@@ -190,3 +231,9 @@ export default function Home() {
     </>
   );
 }
+
+Home.getInitialProps = async ({ query }) => {
+  const { id } = query;
+
+  return { id };
+};
