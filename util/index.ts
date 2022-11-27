@@ -5,6 +5,7 @@ import {
 } from "./types/types";
 
 export const lastRows: Array<Number> = [35, 36, 37, 38, 39, 40, 41];
+//@ts-ignore
 export const indexColumnMap = {
   0: [0, 7, 14, 21, 28, 35],
   1: [1, 8, 15, 22, 29, 36],
@@ -17,7 +18,7 @@ export const indexColumnMap = {
 
 export const PLAYER_1: String = "Player_1";
 export const PLAYER_2: String = "Player_2";
-
+// @ts-ignore
 export const checkColumnRecursively: boolean = (
   element: number,
   array: Array<number>,
@@ -40,6 +41,7 @@ export const checkColumnRecursively: boolean = (
   if (array.includes(nextElement)) {
     counter = counter + 1;
     array.shift();
+    // @ts-ignore
     return checkColumnRecursively(nextElement, array, moveBy, counter);
   } else {
     return false;
@@ -74,6 +76,7 @@ export const checkFourInARow = (
   // if not x spaces, keep going
 
   currentUserBoardPositions.forEach((element) => {
+    // @ts-ignore
     const winConditionMet = checkColumnRecursively(
       element,
       [...currentUserBoardPositions],

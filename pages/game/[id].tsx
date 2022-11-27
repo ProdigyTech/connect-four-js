@@ -2,7 +2,10 @@ import Layout from "../../src/components/Layouts";
 import { useCallback, useState, useEffect } from "react";
 import { flushSync } from "react-dom";
 import Modal, { NoticeModal } from "../../src/components/Winner";
-import { GridState, GridState as GridStateObject } from "../util/types/types";
+import {
+  GridState,
+  GridState as GridStateObject,
+} from "../../util/types/types";
 import { useAppContext } from "../../src/context/socket-context";
 
 import {
@@ -13,8 +16,12 @@ import {
   checkWinConditions,
 } from "../../util";
 
-export default function Home({ id }) {
-  const [mousePlacement, setMousePlacement] = useState(null);
+// eslint-disable-next-line
+export default function Home({ id }: { id: string }) {
+  const [mousePlacement, setMousePlacement] = useState({
+    clientX: 0,
+    clientY: 0,
+  });
   const [animationInProgress, setAnimationInProgress] = useState(false);
 
   const {
@@ -31,10 +38,10 @@ export default function Home({ id }) {
     setWinner,
     changePlayer,
     currentPlayer,
-    isError
+    isError,
   } = useAppContext();
 
-  console.log(isError, 'is error')
+  console.log(isError, "is error");
 
   useEffect(() => {
     if (!joinedRoom && !isLoading) {
@@ -42,9 +49,13 @@ export default function Home({ id }) {
     }
   }, [joinRoom, joinedRoom, id, isLoading]);
 
-
-
-  const mouseTracker = ({ clientY, clientX }) => {
+  const mouseTracker = ({
+    clientY,
+    clientX,
+  }: {
+    clientY: Number;
+    clientX: Number;
+  }) => {
     if (!isLoading && socketInstance) {
       // console.log("mouse-move", { clientX, clientY });
       //   socketInstance.emit("mouse-move", { clientX, clientY });
@@ -56,7 +67,7 @@ export default function Home({ id }) {
     //   setMousePlacement({ clientX, clientY });
     // });
 
-    socketInstance?.on("animation-send", (data) => {
+    socketInstance?.on("animation-send", (data: Array<GridState>) => {
       setGridState(data);
     });
 
@@ -76,7 +87,7 @@ export default function Home({ id }) {
     setAnimationInProgress(false);
     setWinner({ player: null, won: false });
     socketInstance.emit("animation", []);
-  }, []);
+  }, [socketInstance]);
 
   const findCellPlacement = useCallback(
     (initialPos: number) => {
@@ -121,7 +132,7 @@ export default function Home({ id }) {
           // add element to end of state array to start animation
           if (iteration == 0) {
             flushSync(() => {
-              setGridState((g) => {
+              setGridState((g: Array<GridState>) => {
                 socketInstance.emit("animation", [
                   ...g,
                   { cell: element, user: player },
@@ -129,22 +140,24 @@ export default function Home({ id }) {
                 return [...g, { cell: element, user: player }];
               });
 
-              resolve();
+              resolve("");
             });
           } else {
             flushSync(() => {
               // remove the previous element from the animation, add new element to the array.
               // this simulates "dropping" the chip in the gameboard.
-              setGridState((g) => {
+              setGridState((g: Array<GridState>) => {
                 const lastElement = g[g.length - 1];
-                const filtered = g.filter((e) => e.cell !== lastElement.cell);
+                const filtered = g.filter(
+                  (e: GridStateObject) => e.cell !== lastElement.cell
+                );
                 socketInstance.emit("animation", [
                   ...filtered,
                   { cell: element, user: player },
                 ]);
                 return [...filtered, { cell: element, user: player }];
               });
-              resolve();
+              resolve("");
             });
           }
         }, 60);
@@ -169,6 +182,7 @@ export default function Home({ id }) {
 
       const previousState = gridState;
       let iteration = 0;
+      // @ts-ignore
       const associatedColumnIndexes = indexColumnMap[i];
       const unusedColumnIndexes = associatedColumnIndexes.filter(
         (d: Number) => !gridState.some((g: GridStateObject) => g.cell == d)
@@ -194,15 +208,16 @@ export default function Home({ id }) {
         setWinner(gameStatus);
         socketInstance.emit("win", gameStatus);
       } else {
-        changePlayer()
+        console.log("hello");
+        changePlayer(socketInstance);
         // change player
         // unlock gameboard
       }
     },
-    [gridState, player, findCellPlacement, animationPromise]
+    [gridState, player, findCellPlacement, animationPromise, socketInstance]
   );
 
-  console.log(currentPlayer, player)
+  console.log(currentPlayer, player);
 
   const myStyle = {
     left: `${mousePlacement?.clientX || 0}px`,
@@ -230,24 +245,27 @@ export default function Home({ id }) {
         </b>{" "}
       </h3>
       <Layout>
+        {/* @ts-ignore  */}
         <div style={myStyle}></div>
         {isError && (
           <NoticeModal
             message={`There was an error connecting to the game server. \n Try again later`}
             header={`Something went wrong`}
+            onClick={() => {}}
           />
         )}
-        {isLoading &&
-          !isError && (
-            <NoticeModal
-              message={`connecting to game server`}
-              header={`Please wait...`}
-            />
-          )}
+        {isLoading && !isError && (
+          <NoticeModal
+            message={`connecting to game server`}
+            header={`Please wait...`}
+            onClick={() => {}}
+          />
+        )}
         {!isLoading && isWaitingForOtherPlayer && !isError && (
           <NoticeModal
             message={`Waiting for opponent to join`}
             header={`Please wait...`}
+            onClick={() => {}}
           />
         )}
         {winner.won && <Modal player={winner.player} onClick={resetGame} />}
@@ -278,9 +296,9 @@ export default function Home({ id }) {
     </>
   );
 }
-
-Home.getInitialProps = async ({ query }) => {
-  const { id } = query;
+// @ts-ignore
+Home.getInitialProps = async ({ query }: { query }) => {
+  const { id }: {id: String} = query;
 
   return { id };
 };
