@@ -6,7 +6,7 @@ import {
   useCallback,
   useMemo,
 } from "react";
-import io from "Socket.IO-client";
+import io from "socket.io-client";
 import { PLAYER_1, PLAYER_2 } from "../../util";
 
 const SocketContext = createContext();
