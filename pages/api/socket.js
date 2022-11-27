@@ -1,4 +1,4 @@
-import { Server } from "socket.iO";
+import { Server } from "socket.io";
 
 const userGameTracker = [];
 
