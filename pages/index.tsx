@@ -23,6 +23,7 @@ export default function Home() {
     <>
       <Input
         onChange={(e: React.MouseEvent<HTMLInputElement>) =>
+          // @ts-ignore
           setInputState(e.target.value)
         }
         value={inputState}

@@ -54,9 +54,9 @@ export function AppWrapper({ children }) {
     setJoinedRoom(true);
   };
 
-  const changePlayer = () => {
+  const changePlayer = (passedSocketInstance) => {
     const nextPlayer = currentPlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
-    socketInstance?.emit("change-player", nextPlayer);
+    passedSocketInstance.emit("change-player", nextPlayer);
     setCurrentPlayer(nextPlayer);
   };
 
