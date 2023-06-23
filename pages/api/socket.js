@@ -7,7 +7,7 @@ const ioHandler = (req, res) => {
     console.log("*First use, starting socket.io");
 
     const io = new Server(res.socket.server);
-
+// need to scope to the room. 
     io.on("connection", (socket) => {
       socket.on("join", async function (room) {
         const sockets = await io.in(room).fetchSockets();
@@ -36,8 +36,13 @@ const ioHandler = (req, res) => {
       socket.on("animation", (data) => {
         socket.broadcast.emit("animation", data);
       });
-      socket.on("mouse-move", (msg) => {
-        socket.broadcast.emit("mouse-placement", msg);
+      socket.on("mouse-move", ({ clientX, clientY, room }) => {
+        const otherId = userGameTracker.find((data) => data.socketID !== socket.id && data.roomID == room)
+        socket.broadcast.to(otherId.socketID).emit("mouse-placement", { clientX, clientY });
+      });
+
+      socket.on("game-error", (msg) => {
+        socket.broadcast.emit("game-error", msg);
       });
       socket.on("change-player", (data) => {
         socket.broadcast.emit("change-player", data);

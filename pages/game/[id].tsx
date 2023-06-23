@@ -6,18 +6,19 @@ import {
   GridState,
   GridState as GridStateObject,
 } from "../../util/types/types";
-import { useAppContext } from "../../src/context/socket-context";
+import { useSocketContext } from "../../src/context/socket-context";
+import { useGameContext } from "../../src/context/game-context";
 
 import {
   lastRows,
   indexColumnMap,
   PLAYER_1,
-  PLAYER_2,
   checkWinConditions,
 } from "../../util";
 import { useRouter } from "next/router";
 
-
+//TODO: Find a better way to handle player 1 and player 2, i.e use state from socket server-side to assign players, store that in state.
+// need to only be able to access this page from /index, maybe add some sort of check
 
 // eslint-disable-next-line
 export default function Home({ id }: { id: string }) {
@@ -31,6 +32,10 @@ export default function Home({ id }: { id: string }) {
   const {
     socketInstance,
     isLoading,
+    isError: isSocketError,
+  } = useSocketContext();
+
+  const {
     joinedRoom,
     joinRoom,
     connectedUsers,
@@ -42,26 +47,14 @@ export default function Home({ id }: { id: string }) {
     setWinner,
     changePlayer,
     currentPlayer,
-    isError,
-  } = useAppContext();
+    gameError,
+    mouseTracker,
+    broadcastGameError,
+  } = useGameContext();
 
   useEffect(() => {
-    if (!joinedRoom && !isLoading) {
-      joinRoom(id);
-    }
-  }, [joinRoom, joinedRoom, id, isLoading]);
-
-  const mouseTracker = useCallback(() => ({
-    clientY,
-    clientX,
-  }: {
-    clientY: Number;
-    clientX: Number;
-  }) => {
-    if (!isLoading && socketInstance) {
-        socketInstance.emit("mouse-move", { clientX, clientY });
-    }
-  }, [isLoading, socketInstance]);
+    joinRoom(id);
+  }, [joinRoom, id]);
 
   useEffect(() => {
     socketInstance?.on("mouse-placement", ({ clientX, clientY }) => {
@@ -72,19 +65,31 @@ export default function Home({ id }: { id: string }) {
       setGridState(data);
     });
 
-     socketInstance?.on("reset-game", () => {
-       setGridState([]);
-       setWinner({ player: null, won: false });
-     });
-
-
+    socketInstance?.on("reset-game", () => {
+      setGridState([]);
+      setWinner({ player: null, won: false });
+    });
   }, [setGridState, setWinner, socketInstance]);
 
   useEffect(() => {
-    if (window) {
-      window.addEventListener("mousemove", mouseTracker);
+    window.broadcastGameError = broadcastGameError;
+
+    if (isSocketError || gameError) {
+      broadcastGameError(true);
     }
-  }, [mouseTracker]);
+  }, [isSocketError, gameError, broadcastGameError]);
+
+  useEffect(() => {
+    if (socketInstance && socketInstance?.emit?.()) {
+      window.addEventListener("mousemove", (e) =>
+        socketInstance?.emit("mouse-move", {
+          clientX: e.clientX,
+          clientY: e.clientY,
+          room: router.query.id,
+        })
+      );
+    }
+  }, [socketInstance]);
 
   const resetGame = useCallback(() => {
     socketInstance.emit("reset-game", []);
@@ -212,18 +217,26 @@ export default function Home({ id }: { id: string }) {
         changePlayer(socketInstance);
       }
     },
-    [findCellPlacement, gridState, player, setGridState, socketInstance, animationPromise, setWinner, changePlayer]
+    [
+      findCellPlacement,
+      gridState,
+      player,
+      setGridState,
+      socketInstance,
+      animationPromise,
+      setWinner,
+      changePlayer,
+    ]
   );
 
   const myStyle = {
-    left: `${mousePlacement?.clientX+10 || 0}px`,
-    top: `${mousePlacement?.clientY +10|| 0}px`,
-    "background-color": "black",
+    left: `${mousePlacement?.clientX + 10 || 0}px`,
+    top: `${mousePlacement?.clientY + 10 || 0}px`,
+    backgroundColor: "black",
     // width: "35px",
     // height: "35px",
     position: "absolute",
-    "z-index": "100",
-    color: "red"
+    color: "red",
   };
 
   return (
@@ -244,27 +257,41 @@ export default function Home({ id }: { id: string }) {
       <Layout>
         {/* @ts-ignore  */}
         <div style={myStyle}>Opposite Player's mouse position</div>
-        {isError && (
+        {isSocketError && (
           <NoticeModal
             message={`There was an error connecting to the game server. \n Try again later`}
             header={`Something went wrong`}
-            onClick={() => { router.push("/")}}
+            onClick={() => {
+              router.push("/");
+            }}
           />
         )}
-        {isLoading && !isError && (
+        {gameError && (
+          <NoticeModal
+            message={`The game encountered an unexpected error, please refresh the page`}
+            header={`That's not good....`}
+            onClick={() => {
+              router.push("/");
+            }}
+          />
+        )}
+        {isLoading && !isSocketError && !gameError && (
           <NoticeModal
             message={`connecting to game server`}
             header={`Please wait...`}
             onClick={() => {}}
           />
         )}
-        {!isLoading && isWaitingForOtherPlayer && !isError && (
-          <NoticeModal
-            message={`Waiting for opponent to join`}
-            header={`Please wait...`}
-            onClick={() => {}}
-          />
-        )}
+        {!isLoading &&
+          isWaitingForOtherPlayer &&
+          !isSocketError &&
+          !gameError && (
+            <NoticeModal
+              message={`Waiting for opponent to join`}
+              header={`Please wait...`}
+              onClick={() => {}}
+            />
+          )}
         {winner.won && <Modal player={winner.player} onClick={resetGame} />}
 
         <div className="grid">
@@ -295,7 +322,7 @@ export default function Home({ id }: { id: string }) {
 }
 // @ts-ignore
 Home.getInitialProps = async ({ query }: { query }) => {
-  const { id }: {id: String} = query;
+  const { id }: { id: String } = query;
 
   return { id };
 };

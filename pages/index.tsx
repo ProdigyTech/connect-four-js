@@ -4,12 +4,12 @@ import Button from "../src/components/Button";
 import { useRouter } from "next/router";
 import { v4 as uuidv4 } from "uuid";
 import { useState } from "react";
-import { useAppContext } from "../src/context/socket-context";
+import { useGameContext } from "../src/context/game-context";
 
 export default function Home() {
   const router = useRouter();
   const [inputState, setInputState] = useState("");
-   const { joinRoom } = useAppContext();
+   const { joinRoom } = useGameContext();
 
   const goToRoom = async(e: React.MouseEvent<HTMLElement>, id: String) => {
     if (inputState.length || id.length) {
