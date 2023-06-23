@@ -15,9 +15,13 @@ import {
   PLAYER_2,
   checkWinConditions,
 } from "../../util";
+import { useRouter } from "next/router";
+
+
 
 // eslint-disable-next-line
 export default function Home({ id }: { id: string }) {
+  const router = useRouter();
   const [mousePlacement, setMousePlacement] = useState({
     clientX: 0,
     clientY: 0,
@@ -41,15 +45,13 @@ export default function Home({ id }: { id: string }) {
     isError,
   } = useAppContext();
 
-  console.log(isError, "is error");
-
   useEffect(() => {
     if (!joinedRoom && !isLoading) {
       joinRoom(id);
     }
   }, [joinRoom, joinedRoom, id, isLoading]);
 
-  const mouseTracker = ({
+  const mouseTracker = useCallback(() => ({
     clientY,
     clientX,
   }: {
@@ -57,36 +59,35 @@ export default function Home({ id }: { id: string }) {
     clientX: Number;
   }) => {
     if (!isLoading && socketInstance) {
-      // console.log("mouse-move", { clientX, clientY });
-      //   socketInstance.emit("mouse-move", { clientX, clientY });
+        socketInstance.emit("mouse-move", { clientX, clientY });
     }
-  };
+  }, [isLoading, socketInstance]);
 
   useEffect(() => {
-    // socketInstance?.on("mouse-placement", ({ clientX, clientY }) => {
-    //   setMousePlacement({ clientX, clientY });
-    // });
+    socketInstance?.on("mouse-placement", ({ clientX, clientY }) => {
+      setMousePlacement({ clientX, clientY });
+    });
 
     socketInstance?.on("animation-send", (data: Array<GridState>) => {
       setGridState(data);
     });
 
-    // window.socketCall = function (on, message) {
-    //   socketInstance.emit(on, message);
-    // };
-  }, [socketInstance]);
+     socketInstance?.on("reset-game", () => {
+       setGridState([]);
+       setWinner({ player: null, won: false });
+     });
+
+
+  }, [setGridState, setWinner, socketInstance]);
 
   useEffect(() => {
     if (window) {
       window.addEventListener("mousemove", mouseTracker);
     }
-  }, []);
+  }, [mouseTracker]);
 
   const resetGame = useCallback(() => {
-    setGridState([]);
-    setAnimationInProgress(false);
-    setWinner({ player: null, won: false });
-    socketInstance.emit("animation", []);
+    socketInstance.emit("reset-game", []);
   }, [socketInstance]);
 
   const findCellPlacement = useCallback(
@@ -163,7 +164,7 @@ export default function Home({ id }: { id: string }) {
         }, 60);
       });
     },
-    [player]
+    [player, setGridState, socketInstance]
   );
 
   // TODO: clean this up.
@@ -208,25 +209,21 @@ export default function Home({ id }: { id: string }) {
         setWinner(gameStatus);
         socketInstance.emit("win", gameStatus);
       } else {
-        console.log("hello");
         changePlayer(socketInstance);
-        // change player
-        // unlock gameboard
       }
     },
-    [gridState, player, findCellPlacement, animationPromise, socketInstance]
+    [findCellPlacement, gridState, player, setGridState, socketInstance, animationPromise, setWinner, changePlayer]
   );
 
-  console.log(currentPlayer, player);
-
   const myStyle = {
-    left: `${mousePlacement?.clientX || 0}px`,
-    top: `${mousePlacement?.clientY || 0}px`,
+    left: `${mousePlacement?.clientX+10 || 0}px`,
+    top: `${mousePlacement?.clientY +10|| 0}px`,
     "background-color": "black",
-    width: "25px",
-    height: "25px",
-    background: "black",
+    // width: "35px",
+    // height: "35px",
     position: "absolute",
+    "z-index": "100",
+    color: "red"
   };
 
   return (
@@ -246,12 +243,12 @@ export default function Home({ id }: { id: string }) {
       </h3>
       <Layout>
         {/* @ts-ignore  */}
-        <div style={myStyle}></div>
+        <div style={myStyle}>Opposite Player's mouse position</div>
         {isError && (
           <NoticeModal
             message={`There was an error connecting to the game server. \n Try again later`}
             header={`Something went wrong`}
-            onClick={() => {}}
+            onClick={() => { router.push("/")}}
           />
         )}
         {isLoading && !isError && (

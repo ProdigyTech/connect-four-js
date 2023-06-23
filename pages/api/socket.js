@@ -37,7 +37,6 @@ const ioHandler = (req, res) => {
         socket.broadcast.emit("animation", data);
       });
       socket.on("mouse-move", (msg) => {
-        console.log("mouse-move called!", msg);
         socket.broadcast.emit("mouse-placement", msg);
       });
       socket.on("change-player", (data) => {
@@ -47,12 +46,14 @@ const ioHandler = (req, res) => {
         socket.broadcast.emit("animation-send", data);
       });
 
-      socket.on("disconnect", (_id) => {
-        console.log("socket disconnected", _id, socket.id);
+      socket.on("reset-game", () => {
+        socket.broadcast.emit("reset-game", []);
+      });
 
+      socket.on("disconnect", (_id) => {
         const room = userGameTracker.find((s) => s.socketID == socket.id);
         if (room) {
-          console.log(room)
+          console.log(room);
           io.to(room.roomID).emit("client-disconnect");
         } else {
           console.warn(

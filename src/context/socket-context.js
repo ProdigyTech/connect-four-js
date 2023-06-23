@@ -67,9 +67,17 @@ export function AppWrapper({ children }) {
         console.log("a user connected", data);
       });
 
-      socketInstance.on("mouse-placement", (msg) => {
-        console.log("mouse placement", msg);
+      socketInstance.on("reset-game", () => {
+        console.log('game reset')
+        setGridState([]);
+        setWinner({ player: null, won: false });
+        setCurrentPlayer(null);
+        setIsError(false)
       });
+
+      // socketInstance.on("mouse-placement", (msg) => {
+      //   console.log("mouse placement", msg);
+      // });
 
       socketInstance.on("client-disconnect", (data) => {
         console.log("disconnected", data);
