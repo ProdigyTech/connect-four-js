@@ -255,9 +255,10 @@ export default function Home({ id }: { id: string }) {
           {player ? (player === PLAYER_1 ? "Player 1" : "Player 2") : ""}
           <br />
           <br />
-          {currentPlayer`${
-            currentPlayer === PLAYER_1 ? "Player 1" : "Player 2"
-          } is currently taking their turn`}
+          {currentPlayer &&
+            `${
+              currentPlayer === PLAYER_1 ? "Player 1" : "Player 2"
+            } is currently taking their turn`}
         </b>{" "}
       </h3>
       <Layout>
