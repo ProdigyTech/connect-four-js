@@ -54,12 +54,14 @@ export default function Home({ id }: { id: string }) {
   } = useGameContext();
 
   useEffect(() => {
+    // @ts-ignore
     if (!window.connectFour) {
       joinRoom(id);
     }
   }, [id, joinRoom]);
 
   useEffect(() => {
+    // @ts-ignore
     socketInstance?.on("mouse-placement", ({ clientX, clientY }) => {
       setMousePlacement({ clientX, clientY });
     });
@@ -75,6 +77,7 @@ export default function Home({ id }: { id: string }) {
   }, [setGridState, setWinner, socketInstance]);
 
   useEffect(() => {
+    // @ts-ignore
     window.broadcastGameError = broadcastGameError;
 
     if (isSocketError || gameError) {
@@ -92,7 +95,7 @@ export default function Home({ id }: { id: string }) {
         })
       );
     }
-  }, [socketInstance]);
+  }, [socketInstance, router.query.id]);
 
   const resetGame = useCallback(() => {
     socketInstance.emit("reset-game", []);
@@ -259,7 +262,7 @@ export default function Home({ id }: { id: string }) {
       </h3>
       <Layout>
         {/* @ts-ignore  */}
-        <div style={myStyle}>Opposite Player's mouse position</div>
+        <div style={myStyle}>Opposite Player mouse position</div>
         {isSocketError && (
           <NoticeModal
             message={`There was an error connecting to the game server. \n Try again later`}

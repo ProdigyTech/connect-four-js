@@ -14,7 +14,8 @@ export default function Home() {
   const goToRoom = async(e: React.MouseEvent<HTMLElement>, id: String) => {
     if (inputState.length || id.length) {
       e.preventDefault();
-      joinRoom(`${id || inputState}`)
+      joinRoom(`${id || inputState}`);
+      // @ts-ignore
       window.connectFour = true;
       router.push(`/game/${id || inputState}`);
     }
