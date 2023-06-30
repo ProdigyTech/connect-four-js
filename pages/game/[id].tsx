@@ -16,6 +16,7 @@ import {
   checkWinConditions,
 } from "../../util";
 import { useRouter } from "next/router";
+import React from "react";
 
 //TODO: Find a better way to handle player 1 and player 2, i.e use state from socket server-side to assign players, store that in state.
 // need to only be able to access this page from /index, maybe add some sort of check
@@ -247,22 +248,25 @@ export default function Home({ id }: { id: string }) {
 
   return (
     <>
-      <h3>
-        {" "}
-        Current Player:{" "}
-        <b>
-          {player ? (player === PLAYER_1 ? "Player 1" : "Player 2") : ""}
-          <br />
-          <br />
-          {currentPlayer &&
-            `${
+      {!isWaitingForOtherPlayer && (
+        <h3>
+          {" "}
+          Current Player:{" "}
+          <b>
+            {player ? (player === PLAYER_1 ? "Player 1" : "Player 2") : ""}
+            <br />
+            <br />
+            {currentPlayer`${
               currentPlayer === PLAYER_1 ? "Player 1" : "Player 2"
             } is currently taking their turn`}
-        </b>{" "}
-      </h3>
+          </b>{" "}
+        </h3>
+      )}
       <Layout>
         {/* @ts-ignore  */}
-        <div style={myStyle}>Opposite Player mouse position</div>
+        {!isWaitingForOtherPlayer && (
+          <div style={myStyle}>Opposite Player mouse position</div>
+        )}
         {isSocketError && (
           <NoticeModal
             message={`There was an error connecting to the game server. \n Try again later`}
@@ -295,7 +299,9 @@ export default function Home({ id }: { id: string }) {
             <NoticeModal
               message={`Waiting for opponent to join`}
               header={`Please wait...`}
-              onClick={() => {}}
+              onClick={() => {
+                router.push("/");
+              }}
             />
           )}
         {winner.won && <Modal player={winner.player} onClick={resetGame} />}
