@@ -42,9 +42,12 @@ const ioHandler = (req, res) => {
         const otherId = userGameTracker.find(
           (data) => data.socketID !== socket.id && data.roomID == room
         );
-        socket.broadcast
-          .to(otherId.socketID)
-          .emit("mouse-placement", { clientX, clientY });
+
+        if (otherId?.socketID) {
+          socket.broadcast
+            .to(otherId.socketID)
+            .emit("mouse-placement", { clientX, clientY });
+        }
       });
 
       socket.on("game-error", (msg) => {
