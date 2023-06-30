@@ -1,4 +1,4 @@
-import { Server } from "Socket.IO";
+import { Server } from "socket.io";
 
 const userGameTracker = [];
 
@@ -7,7 +7,7 @@ const ioHandler = (req, res) => {
     console.log("*First use, starting socket.io");
 
     const io = new Server(res.socket.server);
-
+    // need to scope to the room.
     io.on("connection", (socket) => {
       socket.on("join", async function (room) {
         const sockets = await io.in(room).fetchSockets();
@@ -16,7 +16,9 @@ const ioHandler = (req, res) => {
 
         if (sockets.length == 2) {
           console.error("can't join the room, 2 people in there");
-          socket.emit("exception", { errorMessage: "maxNumberClientsReached" });
+          socket.emit("exception", {
+            errorMessage: "maxNumberClientsReached",
+          });
         } else {
           socket.join(room);
 
@@ -36,9 +38,17 @@ const ioHandler = (req, res) => {
       socket.on("animation", (data) => {
         socket.broadcast.emit("animation", data);
       });
-      socket.on("mouse-move", (msg) => {
-        console.log("mouse-move called!", msg);
-        socket.broadcast.emit("mouse-placement", msg);
+      socket.on("mouse-move", ({ clientX, clientY, room }) => {
+        const otherId = userGameTracker.find(
+          (data) => data.socketID !== socket.id && data.roomID == room
+        );
+        socket.broadcast
+          .to(otherId.socketID)
+          .emit("mouse-placement", { clientX, clientY });
+      });
+
+      socket.on("game-error", (msg) => {
+        socket.broadcast.emit("game-error", msg);
       });
       socket.on("change-player", (data) => {
         socket.broadcast.emit("change-player", data);
@@ -47,12 +57,14 @@ const ioHandler = (req, res) => {
         socket.broadcast.emit("animation-send", data);
       });
 
-      socket.on("disconnect", (_id) => {
-        console.log("socket disconnected", _id, socket.id);
+      socket.on("reset-game", () => {
+        socket.broadcast.emit("reset-game", []);
+      });
 
+      socket.on("disconnect", (_id) => {
         const room = userGameTracker.find((s) => s.socketID == socket.id);
         if (room) {
-          console.log(room)
+          console.log(room);
           io.to(room.roomID).emit("client-disconnect");
         } else {
           console.warn(
