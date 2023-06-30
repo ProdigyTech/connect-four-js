@@ -248,25 +248,22 @@ export default function Home({ id }: { id: string }) {
 
   return (
     <>
-      {!isWaitingForOtherPlayer && (
-        <h3>
-          {" "}
-          Current Player:{" "}
-          <b>
-            {player ? (player === PLAYER_1 ? "Player 1" : "Player 2") : ""}
-            <br />
-            <br />
-            {currentPlayer`${
-              currentPlayer === PLAYER_1 ? "Player 1" : "Player 2"
-            } is currently taking their turn`}
-          </b>{" "}
-        </h3>
-      )}
+      <h3>
+        {" "}
+        Current Player:{" "}
+        <b>
+          {player ? (player === PLAYER_1 ? "Player 1" : "Player 2") : ""}
+          <br />
+          <br />
+          {currentPlayer`${
+            currentPlayer === PLAYER_1 ? "Player 1" : "Player 2"
+          } is currently taking their turn`}
+        </b>{" "}
+      </h3>
       <Layout>
         {/* @ts-ignore  */}
         {!isWaitingForOtherPlayer && (
-         //@ts-ignore
-         <div style={myStyle}>Opposite Player mouse position</div>
+          <div style={myStyle}>Opposite Player mouse position</div>
         )}
         {isSocketError && (
           <NoticeModal
@@ -290,7 +287,9 @@ export default function Home({ id }: { id: string }) {
           <NoticeModal
             message={`connecting to game server`}
             header={`Please wait...`}
-            onClick={() => {}}
+            onClick={() => {
+              router.push("/");
+            }}
           />
         )}
         {!isLoading &&
