@@ -265,7 +265,8 @@ export default function Home({ id }: { id: string }) {
       <Layout>
         {/* @ts-ignore  */}
         {!isWaitingForOtherPlayer && (
-          <div style={myStyle}>Opposite Player mouse position</div>
+         //@ts-ignore
+         <div style={myStyle}>Opposite Player mouse position</div>
         )}
         {isSocketError && (
           <NoticeModal
