@@ -15,7 +15,7 @@ export function SocketProvider({ children }) {
   const [socketInstance, setSocketInstance] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [connectedUsers, setConnectedUser] = useState([]);
-  const [isError, setIsError] = useState(null);
+  const [isError, setIsError] = useState(null); 
 
   const handleErrors = (errors) => {
     setIsError(errors);

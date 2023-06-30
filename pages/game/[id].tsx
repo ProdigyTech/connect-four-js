@@ -23,6 +23,7 @@ import { useRouter } from "next/router";
 // eslint-disable-next-line
 export default function Home({ id }: { id: string }) {
   const router = useRouter();
+
   const [mousePlacement, setMousePlacement] = useState({
     clientX: 0,
     clientY: 0,
@@ -53,8 +54,10 @@ export default function Home({ id }: { id: string }) {
   } = useGameContext();
 
   useEffect(() => {
-    joinRoom(id);
-  }, [joinRoom, id]);
+    if (!window.connectFour) {
+      joinRoom(id);
+    }
+  }, [id, joinRoom]);
 
   useEffect(() => {
     socketInstance?.on("mouse-placement", ({ clientX, clientY }) => {

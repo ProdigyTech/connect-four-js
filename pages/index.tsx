@@ -15,6 +15,7 @@ export default function Home() {
     if (inputState.length || id.length) {
       e.preventDefault();
       joinRoom(`${id || inputState}`)
+      window.connectFour = true;
       router.push(`/game/${id || inputState}`);
     }
   };

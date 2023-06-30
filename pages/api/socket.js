@@ -7,7 +7,7 @@ const ioHandler = (req, res) => {
     console.log("*First use, starting socket.io");
 
     const io = new Server(res.socket.server);
-// need to scope to the room. 
+    // need to scope to the room.
     io.on("connection", (socket) => {
       socket.on("join", async function (room) {
         const sockets = await io.in(room).fetchSockets();
@@ -16,7 +16,9 @@ const ioHandler = (req, res) => {
 
         if (sockets.length == 2) {
           console.error("can't join the room, 2 people in there");
-          socket.emit("exception", { errorMessage: "maxNumberClientsReached" });
+          socket.emit("exception", {
+            errorMessage: "maxNumberClientsReached",
+          });
         } else {
           socket.join(room);
 
@@ -37,8 +39,12 @@ const ioHandler = (req, res) => {
         socket.broadcast.emit("animation", data);
       });
       socket.on("mouse-move", ({ clientX, clientY, room }) => {
-        const otherId = userGameTracker.find((data) => data.socketID !== socket.id && data.roomID == room)
-        socket.broadcast.to(otherId.socketID).emit("mouse-placement", { clientX, clientY });
+        const otherId = userGameTracker.find(
+          (data) => data.socketID !== socket.id && data.roomID == room
+        );
+        socket.broadcast
+          .to(otherId.socketID)
+          .emit("mouse-placement", { clientX, clientY });
       });
 
       socket.on("game-error", (msg) => {
