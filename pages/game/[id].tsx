@@ -262,8 +262,9 @@ export default function Home({ id }: { id: string }) {
         </b>{" "}
       </h3>
       <Layout>
-        {/* @ts-ignore  */}
+      
         {!isWaitingForOtherPlayer && (
+            /* @ts-ignore  */
           <div style={myStyle}>Opposite Player mouse position</div>
         )}
         {isSocketError && (
